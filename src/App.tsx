@@ -266,12 +266,15 @@ export default function App() {
           sub={`${s.drivingCount} tee shots (par 4/5)`}
         />
         <Card title="Driving (Max yd)" value={`${s.drivingMax}`} />
-        <Card title="SG Total" value={`${s.sg.total}`} />
-      <Card title="T2G" value={`${s.sg.t2g}`} />
-      <Card title="OTT" value={`${s.sg.ott}`} />
-      <Card title="APP" value={`${s.sg.app}`} />
-      <Card title="ARG" value={`${s.sg.arg}`} />
-      <Card title="Putt" value={`${s.sg.putt}`} />
+      
+      <SgCard title="SG Total" value={s.sg.total} />
+      <SgCard title="T2G" value={s.sg.t2g} />
+      <SgCard title="OTT" value={s.sg.ott} />
+      <SgCard title="APP" value={s.sg.app} />
+      <SgCard title="ARG" value={s.sg.arg} />
+      <SgCard title="Putt" value={s.sg.putt} />
+
+      
         
       </div>
 
@@ -288,6 +291,24 @@ export default function App() {
             ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+function SgCard(props: { title: string; value: number }) {
+  const good = props.value >= 0;
+
+  const border = good ? "1px solid #b7e4c7" : "1px solid #f5c2c7";
+  const bg = good ? "#ecfdf3" : "#fff1f2";
+  const color = good ? "#166534" : "#b91c1c";
+
+  const v = Math.round(props.value * 100) / 100;
+  const text = (v >= 0 ? "+" : "") + v.toFixed(2);
+
+  return (
+    <div style={{ border, background: bg, borderRadius: 12, padding: 12 }}>
+      <div style={{ fontSize: 12, color: "#555" }}>{props.title}</div>
+      <div style={{ fontSize: 22, fontWeight: 800, marginTop: 4, color }}>{text}</div>
     </div>
   );
 }
