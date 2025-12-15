@@ -91,6 +91,26 @@ export default function App() {
     return round.holes[holeIndex] ?? null;
   }, [round, holeIndex]);
 
+  // ✅ Auto-add first shot when navigating to a hole with no shots
+  useEffect(() => {
+    if (!hole || hole.shots.length > 0) return;
+    
+    const newShot: Shot = {
+      shot: 1,
+      lieBefore: "Tee",
+      distBefore: 0,
+      lieAfter: "",
+      distAfter: 0,
+    };
+
+    const updatedHole = { ...hole, shots: [newShot] };
+    if (round) {
+      const holes = round.holes.slice();
+      holes[holeIndex] = updatedHole;
+      setRound({ ...round, holes });
+    }
+  }, [hole, holeIndex, round]);
+
   function startRound() {
     const newRound = makeNewRound(courseInput);
     setRound(newRound);
@@ -114,6 +134,7 @@ export default function App() {
     holes[holeIndex] = nextHole;
     setRound({ ...round, holes });
   }
+  
 
   function setPar(par: number | undefined) {
     if (!hole) return;
@@ -249,6 +270,8 @@ export default function App() {
         <Card title="Total shots" value={`${s.totalShots}`} />
         {/* <Card title="Avg shots (finished holes)" value={`${s.avgShotsPerFinishedHole}`} /> */}
 
+         <ToParCard toPar={s.toPar} sub={`${s.strokesTotalFinished}/${s.parTotalFinished} (finished holes)`} />
+
         <Card title="FW hit %" value={`${s.fwHitPct}%`} sub={`${s.fwHits}/${s.fwOpportunities} (par 4/5 only)`} />
         <Card title="GIR %" value={`${s.girPct}%`} sub={`${s.girHits}/${s.girOpportunities} (simple)`} />
         <Card
@@ -273,8 +296,77 @@ export default function App() {
       <SgCard title="APP" value={s.sg.app} />
       <SgCard title="ARG" value={s.sg.arg} />
       <SgCard title="Putt" value={s.sg.putt} />
+     
 
-      
+  <div style={{ marginTop: 16 }}>
+  
+</div>
+
+<div style={{ fontWeight: 800, fontSize: 18, marginBottom: 8 }}>Scorecard</div>
+
+  <div style={{ overflowX: "auto" }}>
+    <table style={{ width: "100%", borderCollapse: "collapse" }}>
+      <thead>
+        <tr>
+          {["Hole", "Par", "Score", "±"].map((h) => (
+            <th key={h} style={{ textAlign: "left", padding: "8px 6px", borderBottom: "1px solid #ddd" }}>
+              {h}
+            </th>
+          ))}
+        </tr>
+      </thead>
+
+      <tbody>
+        {s.scorecard.map((h) => {
+          const tp = h.toPar;
+          const color =
+            tp == null ? "#111" : tp <= 0 ? "#166534" : "#b91c1c";
+          const tpText =
+            tp == null ? "" : tp === 0 ? "E" : tp > 0 ? `+${tp}` : `${tp}`;
+
+          return (
+            <tr key={h.hole}>
+              <td style={{ padding: "8px 6px", borderBottom: "1px solid #eee" }}>{h.hole}</td>
+              <td style={{ padding: "8px 6px", borderBottom: "1px solid #eee" }}>{h.par ?? ""}</td>
+              <td style={{ padding: "8px 6px", borderBottom: "1px solid #eee" }}>
+                {h.finished ? h.strokes : ""}
+              </td>
+              <td style={{ padding: "8px 6px", borderBottom: "1px solid #eee", color, fontWeight: 700 }}>
+                {tpText}
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+
+      <tfoot>
+        <tr>
+          <td style={{ padding: "10px 6px", fontWeight: 800 }}>Front</td>
+          <td style={{ padding: "10px 6px", fontWeight: 800 }}>{s.totals.frontPar || ""}</td>
+          <td style={{ padding: "10px 6px", fontWeight: 800 }}>{s.totals.frontStrokes || ""}</td>
+          <td style={{ padding: "10px 6px", fontWeight: 800 }}>
+            {toParText(s.totals.frontToPar)}
+          </td>
+        </tr>
+        <tr>
+          <td style={{ padding: "10px 6px", fontWeight: 800 }}>Back</td>
+          <td style={{ padding: "10px 6px", fontWeight: 800 }}>{s.totals.backPar || ""}</td>
+          <td style={{ padding: "10px 6px", fontWeight: 800 }}>{s.totals.backStrokes || ""}</td>
+          <td style={{ padding: "10px 6px", fontWeight: 800 }}>
+            {toParText(s.totals.backToPar)}
+          </td>
+        </tr>
+        <tr>
+          <td style={{ padding: "10px 6px", fontWeight: 900 }}>Total</td>
+          <td style={{ padding: "10px 6px", fontWeight: 900 }}>{s.totals.totalPar || ""}</td>
+          <td style={{ padding: "10px 6px", fontWeight: 900 }}>{s.totals.totalStrokes || ""}</td>
+          <td style={{ padding: "10px 6px", fontWeight: 900 }}>
+            {toParText(s.totals.totalToPar)}
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
         
       </div>
 
@@ -291,6 +383,30 @@ export default function App() {
             ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+function toParText(n: number) {
+  if (!Number.isFinite(n)) return "";
+  if (n === 0) return "E";
+  return n > 0 ? `+${n}` : `${n}`;
+}
+
+function ToParCard(props: { toPar: number; sub?: string }) {
+  const good = props.toPar <= 0; // - คือดี, + คือแย่
+  const border = good ? "1px solid #b7e4c7" : "1px solid #f5c2c7";
+  const bg = good ? "#ecfdf3" : "#fff1f2";
+  const color = good ? "#166534" : "#b91c1c";
+
+  const text =
+    props.toPar === 0 ? "E" : (props.toPar > 0 ? `+${props.toPar}` : `${props.toPar}`);
+
+  return (
+    <div style={{ border, background: bg, borderRadius: 12, padding: 12 }}>
+      <div style={{ fontSize: 12, color: "#555" }}>To Par</div>
+      <div style={{ fontSize: 22, fontWeight: 800, marginTop: 4, color }}>{text}</div>
+      {props.sub && <div style={{ marginTop: 4, fontSize: 12, color: "#666" }}>{props.sub}</div>}
     </div>
   );
 }

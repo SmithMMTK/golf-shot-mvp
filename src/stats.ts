@@ -1,6 +1,21 @@
 import type { Round } from "./types";
 import { computeSgTotals } from "./sg";
 
+
+export type HoleScore = {
+  hole: number;
+  par?: number;
+  strokes?: number; // score (shots.length) เฉพาะหลุมที่ holed
+  toPar?: number;   // strokes - par
+  finished: boolean;
+};
+
+export type ScoreTotals = {
+  frontPar: number; frontStrokes: number; frontToPar: number;
+  backPar: number;  backStrokes: number;  backToPar: number;
+  totalPar: number; totalStrokes: number; totalToPar: number;
+};
+
 export type Stats = {
   holesTotal: number;
   holesStarted: number;
@@ -32,6 +47,13 @@ export type Stats = {
   drivingAvg: number;
   drivingMax: number;
   sg: SgTotals;
+
+  parTotalFinished: number;
+  strokesTotalFinished: number;
+  toPar: number; // strokes - par (เช่น +3, -1)
+
+  scorecard: HoleScore[];
+  totals: ScoreTotals;
 
 };
 
@@ -67,6 +89,12 @@ function computeGIRSimple(par: number, shots: { shot: number; lieAfter: string; 
 }
 
 export function computeStats(round: Round): Stats {
+
+  const scorecard: HoleScore[] = [];
+
+  let frontPar = 0, frontStrokes = 0;
+  let backPar = 0, backStrokes = 0;
+
   const holesTotal = round.holes.length;
 
   let holesStarted = 0;
@@ -90,13 +118,43 @@ export function computeStats(round: Round): Stats {
   let drivingSum = 0;
   let drivingMax = 0;
 
+  let parTotalFinished = 0;
+  let strokesTotalFinished = 0;
+
   const lieAfterCounts: Record<string, number> = {};
 
   for (const h of round.holes) {
     if (h.shots.length > 0) holesStarted++;
 
     const finished = h.shots.some((s) => s.lieAfter === "Holed");
+    const strokes = finished ? h.shots.length : undefined;
+    const hs: HoleScore = {
+        hole: h.hole,
+        par: h.par,
+        strokes,
+        toPar: (finished && h.par) ? (strokes! - h.par) : undefined,
+        finished,
+    };
+
+    scorecard.push(hs);
+
+    // รวม front/back เฉพาะหลุมที่ finished และมี par
+    if (finished && (h.par === 3 || h.par === 4 || h.par === 5)) {
+        if (h.hole <= 9) {
+            frontPar += h.par;
+            frontStrokes += strokes!;
+        } else {
+            backPar += h.par;
+            backStrokes += strokes!;
+        }
+    }
+
     if (finished) holesFinished++;
+
+    if (finished && (h.par === 3 || h.par === 4 || h.par === 5)) {
+        parTotalFinished += h.par;
+        strokesTotalFinished += h.shots.length;
+}
 
     totalShots += h.shots.length;
 
@@ -157,6 +215,20 @@ export function computeStats(round: Round): Stats {
   //const avgShotsPerFinishedHole =
   //  holesFinished === 0 ? 0 : Math.round((totalShots / holesFinished) * 10) / 10;
 
+    const toPar = strokesTotalFinished - parTotalFinished;
+    const frontToPar = frontStrokes - frontPar;
+    const backToPar = backStrokes - backPar;
+
+    const totalPar = frontPar + backPar;
+    const totalStrokes = frontStrokes + backStrokes;
+    const totalToPar = totalStrokes - totalPar;
+
+    const totals = {
+    frontPar, frontStrokes, frontToPar,
+    backPar,  backStrokes,  backToPar,
+    totalPar, totalStrokes, totalToPar,
+};
+
   return {
     holesTotal,
     holesStarted,
@@ -180,5 +252,11 @@ export function computeStats(round: Round): Stats {
     drivingAvg: drivingCount === 0 ? 0 : Math.round((drivingSum / drivingCount) * 10) / 10,
     drivingMax,
     sg: computeSgTotals(round),
+    parTotalFinished,
+    strokesTotalFinished,
+    toPar,
+    scorecard,
+    totals,
+
   };
 }

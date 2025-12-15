@@ -9,19 +9,33 @@ function isIgnored(s: Shot) {
   return b === "Layup" || a === "Layup" || b === "Penalty" || a === "Penalty";
 }
 
-// floor-match: เลือกแถวที่ key <= value และใกล้ที่สุด
-function floorLookup<T extends { [k: string]: number }>(
+function floorLookup<T extends Record<string, number>>(
   value: number,
   table: T[],
   key: keyof T,
   out: keyof T
 ) {
   let best: T | null = null;
+  let bestKey = -Infinity;
+
   for (const row of table) {
-    if (row[key] <= value) best = row;
-    else break;
+    const k = row[key] as number;
+    if (k <= value && k > bestKey) {
+      bestKey = k;
+      best = row;
+    }
   }
-  return best ? (best[out] as number) : (table[0][out] as number);
+
+  // ถ้า value ต่ำกว่าค่าต่ำสุดในตาราง ให้คืนแถวที่ "key ต่ำสุด"
+  if (!best) {
+    let minRow = table[0];
+    for (const row of table) {
+      if ((row[key] as number) < (minRow[key] as number)) minRow = row;
+    }
+    return minRow[out] as number;
+  }
+
+  return best[out] as number;
 }
 
 function catOfShot(par: number | undefined, shotNo: number, s: Shot): Cat | null {
