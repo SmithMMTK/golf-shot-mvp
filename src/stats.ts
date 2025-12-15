@@ -1,4 +1,5 @@
 import type { Round } from "./types";
+import { computeSgTotals } from "./sg";
 
 export type Stats = {
   holesTotal: number;
@@ -30,8 +31,21 @@ export type Stats = {
   drivingCount: number;
   drivingAvg: number;
   drivingMax: number;
+  sg: SgTotals;
 
 };
+
+export type SgTotals = {
+  ott: number;
+  app: number;
+  arg: number;
+  putt: number;
+  t2g: number;
+  total: number;
+};
+
+
+
 
 function pct(hit: number, opp: number) {
   return opp === 0 ? 0 : Math.round((hit / opp) * 100);
@@ -165,5 +179,6 @@ export function computeStats(round: Round): Stats {
     drivingCount,
     drivingAvg: drivingCount === 0 ? 0 : Math.round((drivingSum / drivingCount) * 10) / 10,
     drivingMax,
+    sg: computeSgTotals(round),
   };
 }

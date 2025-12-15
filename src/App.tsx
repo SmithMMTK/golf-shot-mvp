@@ -266,6 +266,12 @@ export default function App() {
           sub={`${s.drivingCount} tee shots (par 4/5)`}
         />
         <Card title="Driving (Max yd)" value={`${s.drivingMax}`} />
+        <Card title="SG Total" value={`${s.sg.total}`} />
+      <Card title="T2G" value={`${s.sg.t2g}`} />
+      <Card title="OTT" value={`${s.sg.ott}`} />
+      <Card title="APP" value={`${s.sg.app}`} />
+      <Card title="ARG" value={`${s.sg.arg}`} />
+      <Card title="Putt" value={`${s.sg.putt}`} />
         
       </div>
 
