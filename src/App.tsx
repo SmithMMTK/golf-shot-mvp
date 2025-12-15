@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Hole, Round, Shot } from "./types";
-import { loadDraft, saveDraft, clearDraft } from "./storage";
-import { exportCSV, exportJSON } from "./exporters";
+import { loadDraft, saveDraft } from "./storage";
+import { exportCSV} from "./exporters";
+import { computeStats } from "./stats";
 
 const LIE_BEFORE = [
   "Tee",
@@ -67,6 +68,7 @@ export default function App() {
   const [holeIndex, setHoleIndex] = useState(0);
   const [showHoles, setShowHoles] = useState(false);
   const [bootLoaded, setBootLoaded] = useState(false);
+  const [view, setView] = useState<"hole" | "stats">("hole");
 
   // ✅ BOOT: load draft once
   useEffect(() => {
@@ -104,12 +106,7 @@ export default function App() {
     });
   }
 
-  function wipeDraft() {
-    clearDraft().then(() => {
-      setRound(null);
-      setHoleIndex(0);
-    });
-  }
+
 
   function updateHole(nextHole: Hole) {
     if (!round) return;
@@ -231,6 +228,75 @@ export default function App() {
 
   if (!hole) return null;
 
+  if (view === "stats") {
+  const s = computeStats(round);
+
+  return (
+    <div style={{ padding: 16, fontFamily: "system-ui", color: "#111", maxWidth: 720, margin: "0 auto" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+        <button onClick={() => setView("hole")} style={{ padding: "8px 10px" }}>← Back</button>
+        <div style={{ fontSize: 22, fontWeight: 700, flex: 1 }}>Statistics</div>
+      </div>
+
+      <div style={{ marginBottom: 12, color: "#555" }}>
+        Round: <b>{round.roundId}</b>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+        <Card title="Holes started" value={`${s.holesStarted}/${s.holesTotal}`} />
+        <Card title="Holes finished" value={`${s.holesFinished}/${s.holesTotal}`} />
+
+        <Card title="Total shots" value={`${s.totalShots}`} />
+        {/* <Card title="Avg shots (finished holes)" value={`${s.avgShotsPerFinishedHole}`} /> */}
+
+        <Card title="FW hit %" value={`${s.fwHitPct}%`} sub={`${s.fwHits}/${s.fwOpportunities} (par 4/5 only)`} />
+        <Card title="GIR %" value={`${s.girPct}%`} sub={`${s.girHits}/${s.girOpportunities} (simple)`} />
+        <Card
+          title="Scramble %"
+          value={`${s.scramblePct}%`}
+          sub={`${s.scrambleHits}/${s.scrambleOpp} (No GIR → Par)`}
+        />
+        <Card title="Putts" value={`${s.putts}`} />
+
+        <Card title="Penalties" value={`${s.penalties}`} />
+       {/* <Card title="Layups" value={`${s.layups}`} /> */}
+        <Card
+          title="Driving (Avg yd)"
+          value={`${s.drivingAvg}`}
+          sub={`${s.drivingCount} tee shots (par 4/5)`}
+        />
+        <Card title="Driving (Max yd)" value={`${s.drivingMax}`} />
+        
+      </div>
+
+      <div style={{ marginTop: 14 }}>
+        <div style={{ fontWeight: 700, marginBottom: 8 }}>LieAfter breakdown</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {Object.entries(s.lieAfterCounts)
+            .sort((a, b) => b[1] - a[1])
+            .map(([k, v]) => (
+              <div key={k} style={{ display: "flex", justifyContent: "space-between", border: "1px solid #eee", borderRadius: 10, padding: "8px 10px" }}>
+                <div>{k}</div>
+                <div style={{ fontWeight: 700 }}>{v}</div>
+              </div>
+            ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// helper card component (วางไว้ท้ายไฟล์ App.tsx ก็ได้)
+function Card(props: { title: string; value: string; sub?: string }) {
+  return (
+    <div style={{ border: "1px solid #ddd", borderRadius: 12, padding: 12 }}>
+      <div style={{ fontSize: 12, color: "#555" }}>{props.title}</div>
+      <div style={{ fontSize: 22, fontWeight: 800, marginTop: 4 }}>{props.value}</div>
+      {props.sub && <div style={{ marginTop: 4, fontSize: 12, color: "#666" }}>{props.sub}</div>}
+    </div>
+  );
+}
+
   const isHoled = hole.shots.some((s) => s.lieAfter === "Holed");
 
   return (
@@ -276,18 +342,14 @@ export default function App() {
         </div>
 
         <button onClick={() => setShowHoles(true)} style={{ padding: "8px 10px" }}>Holes ▦</button>
-
         <button
-          onClick={() => {
-            const ok = confirm("Start new round? (current draft will remain unless you clear it)");
-            if (ok) {
-              setRound(null); // กลับ Home ไปให้กรอก course ใหม่แล้วกด Start
-            }
-          }}
+          onClick={() => setView(view === "hole" ? "stats" : "hole")}
           style={{ padding: "8px 10px" }}
         >
-          New
+          {view === "hole" ? "Stats" : "Back"}
         </button>
+
+
 
         <button onClick={goNextHole} style={{ padding: "8px 10px" }}>→</button>
       </div>

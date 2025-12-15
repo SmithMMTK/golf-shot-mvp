@@ -5,3 +5,4 @@ export default defineConfig({
   plugins: [react()],
   base: "/golf-shot-mvp/",
 });
+
