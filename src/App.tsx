@@ -243,6 +243,15 @@ export default function App() {
           onClick={() => setRound(null)}   // ✅ กลับหน้า Home (draft ยังอยู่ เพราะ auto-save)
           style={{ padding: "8px 10px" }}
         >
+        <button
+          onClick={() => exportCSV(round)}
+          style={{ padding: "8px 10px" }}
+        >
+          Export CSV
+        </button>
+
+
+        
           Home
         </button>
 
@@ -284,11 +293,8 @@ export default function App() {
       </div>
 
       {/* Round info + clear */}
-      <div style={{ marginBottom: 12, color: "#555", display: "flex", justifyContent: "space-between", gap: 10 }}>
-        <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          Round: <b>{round.roundId}</b>
-        </div>
-        <button onClick={wipeDraft} style={{ padding: "6px 10px" }}>Clear draft</button>
+      <div style={{ marginBottom: 12, color: "#555" }}>
+        Round: <b>{round.roundId}</b>
       </div>
 
       {/* Shots */}
@@ -375,19 +381,7 @@ export default function App() {
         + Add Shot
 
         <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
-          <button
-            onClick={() => exportJSON(round)}
-            style={{ flex: 1, padding: "10px 12px", borderRadius: 12, border: "1px solid #ddd" }}
-          >
-            Export JSON
-          </button>
 
-          <button
-            onClick={() => exportCSV(round)}
-            style={{ flex: 1, padding: "10px 12px", borderRadius: 12, border: "1px solid #ddd" }}
-          >
-            Export CSV
-          </button>
         </div>
 
       </button>
